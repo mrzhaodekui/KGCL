@@ -8,34 +8,15 @@ from collections import Counter
 import torch
 from rdkit import Chem, RDLogger
 
-from models import Graph2Edits, BeamSearch
+from models import KGCL, BeamSearch
+
+import sys
+
 lg = RDLogger.logger()
 lg.setLevel(4)
 
 ROOT_DIR = './'
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-def canonicalize(smi):
-    try:
-        mol = Chem.MolFromSmiles(smi)
-    except:
-        print('no mol', flush=True)
-        return smi
-    if mol is None:
-        return smi
-    mol = Chem.RemoveHs(mol)
-    [a.ClearProp('molAtomMapNumber') for a in mol.GetAtoms()]
-    return Chem.MolToSmiles(mol)
-
-
-def canonicalize_p(smi):
-    p = canonicalize(smi)
-    p_mol = Chem.MolFromSmiles(p)
-    [a.SetAtomMapNum(a.GetIdx()+1) for a in p_mol.GetAtoms()]
-    p_smi = Chem.MolToSmiles(p_mol)
-    return p_smi
-
 
 def canonicalize_smiles(smiles):
     mol = Chem.MolFromSmiles(smiles)
@@ -47,26 +28,6 @@ def canonicalize_smiles(smiles):
         return Chem.MolToSmiles(mol, isomericSmiles=True)
     else:
         return ''
-
-
-def smi_tokenizer(smi):
-    """
-    Tokenize a SMILES molecule or reaction
-    """
-    import re
-    pattern =  "(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\\\|\/|:|~|@|\?|>|\*|\$|\%[0-9]{2}|[0-9])"
-    regex = re.compile(pattern)
-    tokens = [token for token in regex.findall(smi)]
-    # 捕获断言错误并打印不一样的量
-    try:
-        assert smi == ''.join(tokens)
-    except AssertionError:
-        print(f"Original SMILES: {smi}")
-        print(f"Reconstructed SMILES: {''.join(tokens)}")
-        raise  # 重新抛出异常，确保程序终止
-
-    return ' '.join(tokens)
-
 
 def canonicalize_smiles_clear_map(smiles, return_max_frag=True):
 
@@ -109,14 +70,14 @@ def canonicalize_smiles_clear_map(smiles, return_max_frag=True):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='USPTO_full',
-                        help='dataset: USPTO_50k or USPTO_full')
+    parser.add_argument('--dataset', type=str, default='USPTO_50k',
+                        help='dataset: USPTO_50k or USPTO_full or uspto_mit')
     parser.add_argument("--use_rxn_class", default=False,
                         action='store_true', help='Whether to use rxn_class')
-    parser.add_argument('--experiments', type=str, default='31-12-2024--12-03-03',
+    parser.add_argument('--experiments', type=str, default='BEST',
                         help='Name of edits prediction experiment')
     parser.add_argument('--beam_size', type=int,
-                        default=10, help='Beam search width')
+                        default=50, help='Beam search width')
     parser.add_argument('--max_steps', type=int, default=9,
                         help='maximum number of edit steps')
 
@@ -133,10 +94,10 @@ def main():
         exp_dir = os.path.join(
             ROOT_DIR, 'experiments', f'{args.dataset}', 'without_rxn_class', f'{args.experiments}')
 
-    checkpoint = torch.load(os.path.join(exp_dir, 'epoch_111.pt'))
+    checkpoint = torch.load(os.path.join(exp_dir, 'epoch_132.pt'))
     config = checkpoint['saveables']
 
-    model = Graph2Edits(**config, device=DEVICE)
+    model = KGCL(**config, device=DEVICE)
     model.load_state_dict(checkpoint['state'])
     model.to(DEVICE)
     model.eval()
@@ -151,24 +112,9 @@ def main():
                             beam_size=args.beam_size, use_rxn_class=args.use_rxn_class)
     p_bar = tqdm(list(range(len(test_data))))
     pred_file = os.path.join(exp_dir, 'pred_results.txt')
-    # 定义round-trip所需文件存储路径
-    tgt_file = os.path.join(exp_dir, 'tgt-test.txt')  # 目标产物SMILES存储路径，数量应与预测反应物数量匹配
-    src_file = os.path.join(exp_dir, 'src-test.txt')  # 预测的反应物SMILES存储路径，每一行代表预测出的若干个产物，以'.'分隔
 
-    file_num_pred = 1
-    file_num_src = 1
-    file_num_tgt = 1
-    while os.path.exists(pred_file):
-        pred_file = os.path.join(exp_dir, f'pred_results_{file_num_pred}.txt')
-        file_num_pred += 1
-    while os.path.exists(tgt_file):
-        tgt_file = os.path.join(exp_dir, f'tgt-test_{file_num_tgt}.txt')
-        file_num_tgt += 1
-    while os.path.exists(src_file):
-        src_file = os.path.join(exp_dir, f'src-test_{file_num_src}.txt')
-        file_num_src += 1
 
-    with open(pred_file, 'a') as fp, open(tgt_file, 'a') as fp_tgt, open(src_file, 'a') as fp_src:
+    with open(pred_file, 'a') as fp:
         for idx in p_bar:
             rxn_data = test_data[idx]
             rxn_smi = rxn_data.rxn_smi
@@ -183,16 +129,11 @@ def main():
             r_smi = Chem.MolToSmiles(r_mol, isomericSmiles=True)
             r_set = set(r_smi.split('.'))
 
-            r_c, r_maxfrag = canonicalize_smiles_clear_map(r) # 寻找真实反应物的MaxFrag
-
-            # 反应数据处理  target-product
-            # tgt_p = smi_tokenizer(canonicalize_smiles(p))
+            r_c, r_maxfrag = canonicalize_smiles_clear_map(r)
 
             with torch.no_grad():
-                top_k_results = beam_model.run_search(
+                top_k_results= beam_model.run_search(
                     prod_smi=p, max_steps=args.max_steps, rxn_class=rxn_class)
-                # MaxFrag_top_k_results = beam_model.run_search(
-                #     prod_smi=p_maxfrag, max_steps=args.max_steps, rxn_class=rxn_class)
 
             fp.write(f'({idx}) {rxn_smi}\n')
 
@@ -204,28 +145,18 @@ def main():
                 pred_set = set(pred_smi.split('.'))
                 correct = pred_set == r_set
                 pred_c, pred_MaxFrag = canonicalize_smiles_clear_map(pred_smi)
-                MaxFrag_correct = pred_MaxFrag == r_maxfrag  # 预测结果与真实反应物的MaxFrag匹配
+                MaxFrag_correct = pred_MaxFrag == r_maxfrag
                 str_edits = '|'.join(f'({str(edit)};{p})'for edit, p in zip(
                     path['rxn_actions'], path['edits_prob']))
                 fp.write(
                     f'{beam_idx} prediction_is_correct:{correct} probability:{prob} {pred_smi} {str_edits}\n')
+
                 if correct and not beam_matched:
                     top_k[beam_idx] += 1
                     beam_matched = True
                 if MaxFrag_correct and not MaxFrag_beam_matched:
                     MaxFrag_top_k[beam_idx] +=1
                     MaxFrag_beam_matched = True
-                # # 只收集模型认为预测正确的数据
-                # if correct:
-                #     r_src = smi_tokenizer(pred_smi) + ' ' + '>'  # 处理预测的反应物
-                #     fp_src.write(f'{r_src}\n')
-                #     fp_tgt.write(f'{tgt_p}\n')
-                # 收集数据
-                # if pred_smi != 'final_smi_unmapped' and prob>0.0:
-                #     # r_src = smi_tokenizer(pred_smi) + ' ' + '>'  # 处理预测的反应物
-                #     r_src = smi_tokenizer(pred_smi)  # 处理预测的反应物
-                #     fp_src.write(f'{r_src}\n')
-                #     fp_tgt.write(f'{tgt_p}\n')
 
             fp.write('\n')
             if beam_matched:
@@ -238,11 +169,11 @@ def main():
                         stereo_rxn_cor.append(idx)
 
             msg = 'average score'
-            for beam_idx in [1, 3, 5, 10]:
+            for beam_idx in [1, 3, 5, 10, 50]:
                 match_acc = np.sum(top_k[:beam_idx]) / (idx + 1)
                 MaxFrag_match_acc = np.sum(MaxFrag_top_k[:beam_idx]) / (idx + 1)
                 msg += ', t%d: %.3f' % (beam_idx, match_acc)
-                msg += ', MaxFrag:' + 't%d: %.3f' % (beam_idx, MaxFrag_match_acc)  # 计算MaxFrag_acc
+                msg += ', MaxFrag:' + 't%d: %.3f' % (beam_idx, MaxFrag_match_acc)
             p_bar.set_description(msg)
 
         edit_steps = Counter(counter)
