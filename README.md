@@ -10,9 +10,9 @@ KGCL: Knowledge-Enhanced Graph Contrastive Learning for Retrosynthesis Predictio
 ## Data and Checkpoints
 The original datasets used in this paper are from:
 
-USPTO-50K: https://github.com/Hanjun-Dai/GLN (schneider50k)
+USPTO-50K: [https://github.com/Hanjun-Dai/GLN](https://github.com/Hanjun-Dai/GLN) (schneider50k)
 
-USPTO-FULL: https://github.com/Hanjun-Dai/GLN (uspto_multi)
+USPTO-FULL:[https://github.com/Hanjun-Dai/GLN](https://github.com/Hanjun-Dai/GLN) (uspto_multi)
 
 The raw data, processed data can be accessed via [link](https://drive.google.com/drive/folders/11YMNrm7St-GgVF278orHSXk-EKM3ltqH?usp=sharing). The directory structure should be as follows:
 
