@@ -70,8 +70,8 @@ def canonicalize_smiles_clear_map(smiles, return_max_frag=True):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='USPTO_50k',
-                        help='dataset: USPTO_50k or USPTO_full or uspto_mit')
+    parser.add_argument('--dataset', type=str, default='uspto_50k',
+                        help='dataset: uspto_50k or USPTO_full or uspto_mit')
     parser.add_argument("--use_rxn_class", default=False,
                         action='store_true', help='Whether to use rxn_class')
     parser.add_argument('--experiments', type=str, default='BEST',
@@ -90,11 +90,13 @@ def main():
     if args.use_rxn_class:
         exp_dir = os.path.join(
             ROOT_DIR, 'experiments', f'{args.dataset}', 'with_rxn_class', f'{args.experiments}')
+        checkpoint = 'epoch_128.pt'
     else:
         exp_dir = os.path.join(
             ROOT_DIR, 'experiments', f'{args.dataset}', 'without_rxn_class', f'{args.experiments}')
+        checkpoint = 'epoch_132.pt'
 
-    checkpoint = torch.load(os.path.join(exp_dir, 'epoch_132.pt'))
+    checkpoint = torch.load(os.path.join(exp_dir, checkpoint))
     config = checkpoint['saveables']
 
     model = KGCL(**config, device=DEVICE)
