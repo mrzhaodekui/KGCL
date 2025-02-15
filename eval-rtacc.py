@@ -84,7 +84,7 @@ def main():
     beam_model = BeamSearch(model=model, step_beam_size=10, beam_size=args.beam_size, use_rxn_class=args.use_rxn_class)
     p_bar = tqdm(list(range(len(test_data))))
 
-
+    # Load the forward model prediction results
     pred_text = os.path.join(exp_dir, 'forward_predictions_50k_top50.txt')
     with open(pred_text, 'r') as f:
         targets = [''.join(line.strip().split(' ')) for line in f.readlines()]
