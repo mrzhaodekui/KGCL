@@ -119,7 +119,7 @@ class MolGraph:
         for _ in range(self.n_atoms):
             self.a2b.append([])
 
-        # Fusion of functional group knowledge
+        # add group knowledge
         if self.f_fgs:
             temp_tensor = torch.tensor(self.f_atoms)
             f_fgs_tensor = torch.tensor(self.f_fgs)
