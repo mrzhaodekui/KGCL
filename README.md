@@ -7,7 +7,7 @@ KGCL: Knowledge-Enhanced Graph Contrastive Learning for Retrosynthesis Predictio
 - numpy = 1.26.4
 - rdkit = 2024.03.4
 
-## Data and Checkpoints
+## Data
 The original datasets used in this paper are from:
 
 USPTO-50K: [https://github.com/Hanjun-Dai/GLN](https://github.com/Hanjun-Dai/GLN) (schneider50k)
@@ -39,6 +39,7 @@ KGCL
 - Data
     - The raw data of the USPTO-50K dataset and USPTO-FULL dataset is stored in the corresponding folders in the files `raw_train.csv`, `raw_val.csv`, and `raw_test.csv`.
     - All the processed data are named `canonicalized_train.csv` , `canonicalized_val.csv` and `canonicalized_test.csv` and are put in the corresponding folders respectively.
+
 ## Data preprocessing
 - generate the edit labels and the edits sequence for reaction 
 ```
