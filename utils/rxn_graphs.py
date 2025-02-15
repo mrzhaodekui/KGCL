@@ -66,16 +66,6 @@ def attention(query, key, mask=None, dropout=None):
 class MolGraph:
     """
     'MolGraph' represents the graph structure and featurization of a single molecule.
-
-     A MolGraph computes the following attributes:
-
-    * n_atoms: The number of atoms in the molecule.
-    * n_bonds: The number of bonds in the molecule.
-    * f_atoms: A mapping from an atom index to a list of atom features.
-    * f_bonds: A mapping from a bond index to a list of bond features.
-    * a2b: A mapping from an atom index to a list of incoming bond indices.
-    * b2a: A mapping from a bond index to the index of the atom the bond originates from.
-    * b2revb: A mapping from a bond index to the index of the reverse bond.
     """
 
     def __init__(self, mol: Chem.Mol, rxn_class: int = None, use_rxn_class: bool = False) -> None:
