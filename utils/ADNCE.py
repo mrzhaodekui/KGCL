@@ -27,7 +27,7 @@ class ADNCE(nn.Module):
 
 def adnce(query, positive_key, negative_keys=None, temperature=0.1, reduction='mean', negative_mode='unpaired', mu=0.1,
           sigma=1.0):
-    # 检查输入维度
+    # Check input dimensionality
     if query.dim() != 2:
         raise ValueError('<query> must have 2 dimensions')
     if positive_key.dim() != 2:
@@ -66,8 +66,8 @@ def adnce(query, positive_key, negative_keys=None, temperature=0.1, reduction='m
             negative_logits = query @ transpose(negative_keys)
             negative_logits = negative_logits.squeeze(1)
 
-        weight = 1. / (sigma * math.sqrt(2 * math.pi)) * torch.exp(
-            - (negative_logits - mu) ** 2 / (2 * math.pow(sigma, 2)))
+        # apply weight
+        weight = (1 / (sigma * math.sqrt(2 * math.pi))) * torch.exp(-0.5 * ((negative_logits - mu) / sigma) ** 2)
         weight = weight / weight.mean(dim=-1, keepdim=True)
         negative_logits = negative_logits * weight.detach()
 
@@ -82,6 +82,7 @@ def adnce(query, positive_key, negative_keys=None, temperature=0.1, reduction='m
         temp_logits = logits.clone()
         neg_logits = temp_logits.fill_diagonal_(0)
 
+        # apply weight
         weight = (1 / (sigma * math.sqrt(2 * math.pi))) * torch.exp(-0.5 * ((neg_logits - mu) / sigma) ** 2)
         weight = weight / weight.mean(dim=-1, keepdim=True)
 
