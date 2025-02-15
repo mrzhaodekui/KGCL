@@ -23,10 +23,7 @@ BONDSTEREO = list(range(6))
 RXN_CLASSES = list(range(10))
 ATOM_FDIM = len(ATOM_SYMBOL_LIST) + len(DEGREES) + len(FORMAL_CHARGE) + \
     len(VALENCE) + len(NUM_Hs) + len(CHIRALTAG) + len(HYBRIDIZATION) + 1
-# ATOM_FDIM = len(ATOM_SYMBOL_LIST) + len(DEGREES) + len(FORMAL_CHARGE) + \
-#             len(VALENCE) + len(NUM_Hs) + len(CHIRALTAG) + len(HYBRIDIZATION) + 1 + 133
 BOND_FDIM = len(BOND_TYPES) + len(BONDSTEREO) + 2
-# BOND_FDIM = len(BOND_TYPES) + len(BONDSTEREO) + 2 + 14
 
 
 def one_of_k_encoding(x: Any, allowable_set: Union[List, Set]) -> List:
