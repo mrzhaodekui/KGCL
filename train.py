@@ -159,6 +159,11 @@ def test(model, valid_data):
 
 def main(args):
 
+    if args['dataset'] == 'uspto_50k':
+        args['lr'] = 0.001
+    elif args['dataset'] == 'uspto_full':
+        args['lr'] = 0.0001
+
     if args.get('use_rxn_class', False):
         out_dir = os.path.join(ROOT_DIR, 'experiments',
                                args['dataset'], 'with_rxn_class', DATE_TIME)
@@ -252,7 +257,7 @@ if __name__ == '__main__':
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='uspto_50k',
+    parser.add_argument('--dataset', type=str, default='uspto_50k ',
                         help='dataset: uspto_50k or uspto_full or uspto_mit')
     parser.add_argument('--use_rxn_class', default=False,
                         action='store_true', help='Whether to use rxn_class')
