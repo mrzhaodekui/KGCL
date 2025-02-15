@@ -56,19 +56,7 @@ def get_atom_features(atom: Chem.Atom, rxn_class: int = None, use_rxn_class: boo
         Reaction class the molecule was part of
     use_rxn_class: bool, default False,
         Whether to use reaction class as additional input
-
-    functional_groups: A k-hot vector indicating the functional groups the atom belongs to.
     """
-    # if atom is None:
-    #     symbol = one_of_k_encoding('*', ATOM_SYMBOL_LIST)
-    #     if use_rxn_class:
-    #         padding = [0] * (ATOM_FDIM + len(RXN_CLASSES) - len(symbol))
-    #     else:
-    #         padding = [0] * (ATOM_FDIM - len(symbol))
-    #     feature_array = symbol + padding
-    #     return feature_array
-    #
-    # else:
     if use_rxn_class:
         atom_features = one_of_k_encoding(atom.GetSymbol(), ATOM_SYMBOL_LIST) + \
                         one_of_k_encoding(atom.GetDegree(), DEGREES) + \
