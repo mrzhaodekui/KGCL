@@ -86,9 +86,6 @@ def get_bond_features(bond: Chem.Bond) -> List[Union[bool, int, float]]:
     """
     Get bond features.
     """
-    # if bond is None:
-    #     bond_features = [1] + [0] * (BOND_FDIM - 1)
-    # else:
     bond_features = one_of_k_encoding(bond.GetBondType(), BOND_TYPES) + \
                     one_of_k_encoding(int(bond.GetStereo()), BONDSTEREO) + \
                     [bond.GetIsConjugated()] + [bond.IsInRing()]
